@@ -1,0 +1,312 @@
+
+
+We are forcing path:
+
+```text
+PC1 → SW1 → R1 → R2 → R4 → SW4 → PC4
+```
+
+---
+
+# 🧾 Given Info (Important)
+
+### Networks:
+
+* PC1 → `192.168.1.10`
+* PC4 → `192.168.4.10`
+
+### MAC labels (from diagram):
+
+* PC1 → `1111`
+* R1 → `aaaa / bbbb`
+* R2 → `cccc / dddd`
+* R4 → `eeee / ffff`
+* PC4 → `4444`
+
+---
+
+# 🚀 Step-by-Step Life of Packet
+
+---
+
+# 🔹 STEP 1 — PC1 Creates Packet
+
+You run:
+
+```bash
+ping 192.168.4.10
+```
+
+At:
+
+* **Application Layer** → ICMP created
+* **Network Layer**:
+
+```text
+Source IP = 192.168.1.10
+Destination IP = 192.168.4.10
+```
+
+---
+
+# 🔹 STEP 2 — PC1 Checks Network
+
+```text
+192.168.1.x vs 192.168.4.x → different
+```
+
+👉 Uses **default gateway (R1)**
+
+---
+
+# 🔹 STEP 3 — ARP (PC1 → R1)
+
+PC1 asks:
+
+```text
+Who has 192.168.1.1?
+```
+
+R1 replies:
+
+```text
+MAC = aaaa
+```
+
+---
+
+# 🔹 STEP 4 — First Encapsulation (PC1 → R1)
+
+Frame created:
+
+```text
+SRC MAC = 1111
+DST MAC = aaaa
+```
+
+Packet inside:
+
+```text
+SRC IP = 192.168.1.10
+DST IP = 192.168.4.10
+```
+
+---
+
+# 🔹 STEP 5 — Switch (SW1)
+
+Switch checks:
+
+```text
+Destination MAC = aaaa
+```
+
+Forwards to R1.
+
+---
+
+# 🔹 STEP 6 — R1 (Decapsulation)
+
+R1:
+
+```text
+Removes Ethernet header
+```
+
+Now sees:
+
+```text
+Destination IP = 192.168.4.10
+```
+
+---
+
+# 🔹 STEP 7 — R1 Routing Decision
+
+Routing table says:
+
+```text
+192.168.4.0 → via R2
+```
+
+Next-hop = `192.168.12.2`
+
+---
+
+# 🔹 STEP 8 — ARP (R1 → R2)
+
+R1 asks:
+
+```text
+Who has 192.168.12.2?
+```
+
+R2 replies:
+
+```text
+MAC = cccc
+```
+
+---
+
+# 🔹 STEP 9 — Re-Encapsulation (R1 → R2)
+
+New frame:
+
+```text
+SRC MAC = bbbb
+DST MAC = cccc
+```
+
+IP stays SAME:
+
+```text
+SRC IP = 192.168.1.10
+DST IP = 192.168.4.10
+```
+
+---
+
+# 🔹 STEP 10 — R2 Processing
+
+R2:
+
+* Removes frame
+* Checks routing table
+
+Finds:
+
+```text
+192.168.4.0 → via R4
+```
+
+---
+
+# 🔹 STEP 11 — ARP (R2 → R4)
+
+```text
+Who has 192.168.24.4?
+```
+
+R4 replies:
+
+```text
+MAC = eeee
+```
+
+---
+
+# 🔹 STEP 12 — Re-Encapsulation (R2 → R4)
+
+```text
+SRC MAC = dddd
+DST MAC = eeee
+```
+
+IP unchanged.
+
+---
+
+# 🔹 STEP 13 — R4 Processing
+
+R4 checks:
+
+```text
+192.168.4.10 → directly connected
+```
+
+---
+
+# 🔹 STEP 14 — ARP (R4 → PC4)
+
+```text
+Who has 192.168.4.10?
+```
+
+PC4 replies:
+
+```text
+MAC = 4444
+```
+
+---
+
+# 🔹 STEP 15 — Final Encapsulation
+
+```text
+SRC MAC = ffff
+DST MAC = 4444
+```
+
+Packet delivered to PC4.
+
+---
+
+# 🔁 Return Path (IMPORTANT)
+
+```text
+PC4 → R4 → R2 → R1 → PC1
+```
+
+Same process reversed.
+
+---
+
+# 🔥 VERY IMPORTANT CONCEPTS
+
+---
+
+# 1️⃣ Encapsulation / Decapsulation
+
+| Device | Action              |
+| ------ | ------------------- |
+| PC     | Encapsulation       |
+| Switch | Forward only        |
+| Router | Decap + Re-encap    |
+| PC     | Final decapsulation |
+
+---
+
+# 2️⃣ Address Behavior
+
+| Layer       | Changes?               |
+| ----------- | ---------------------- |
+| MAC address | ✅ Changes at every hop |
+| IP address  | ❌ Never changes        |
+
+---
+
+# 3️⃣ ARP Happens At Every Hop
+
+```text
+Each router must know next-hop MAC
+```
+
+---
+
+# 4️⃣ Frame vs Packet
+
+| Layer   | Name   |
+| ------- | ------ |
+| Layer 2 | Frame  |
+| Layer 3 | Packet |
+
+---
+
+# 🧠 Golden Rule
+
+```text
+IP = final destination
+MAC = next hop
+```
+
+---
+
+# 🎯 Full Flow Summary
+
+```text
+PC1 (1111 → aaaa)
+R1 (bbbb → cccc)
+R2 (dddd → eeee)
+R4 (ffff → 4444)
+```
